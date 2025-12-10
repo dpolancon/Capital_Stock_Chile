@@ -1,160 +1,202 @@
 ############################################################
-## 04_build_Kg_2003.R
-## Project: Stock–flow consistent capital stock reconstruction (Chile)
+## 04_build_Kg_2003.R — TD–SFC COMPLIANT (Opción 1)
+## Reconstrucción SFC del stock bruto de capital (Kg, 2003 CLP)
 ##
-## Tasks:
-##  - Build gross capital stocks Kg in 2003 CLP
-##  - For ME & NRC: use Tafunell & Ducoing Kg indices as paths,
-##    anchored on Hofman 1950 Kg (1980 CLP → 2003 CLP via phi_g)
-##  - Construct Kg_NR = Kg_ME + Kg_NRC
-##  - For RC, C, T: use Hofman Kg (1950–1994) converted to 2003 CLP
-##  - Combine all into a single Kg panel in 2003 CLP
-##  - Check additivity (NR = ME + NRC; C = NRC + RC; T = ME + NRC + RC)
-##  - Save Kg_2003.rds in data/interim/
+## Lógica:
+##  - Patrón temporal: Tafunell–Ducoing 2016 (Kg_index) para ME y NRC
+##  - Niveles absolutos (1950, 2003 CLP): anchor_1950.rds (Hofman 2000)
+##  - RC_t = RC_1950 * (NRC_t / NRC_1950)   [Opción 1]
+##  - Agregados: NR, C, T por identidades:
+##       NR = ME + NRC
+##       C  = NRC + RC
+##       T  = ME + NRC + RC
+##  - Output: Kg_2003.rds + Kg_2003_additivity_residuals.rds
 ############################################################
 
-## -------------------------
-## 0. Libraries & setup
-## -------------------------
 library(dplyr)
 library(tidyr)
-library(readr)
-library(readxl)
-library(ggplot2)
-library(purrr)
-library(stringr)
+library(here)
 
-## Load global directories, assets, helpers
-source("00_setup.R")
+source(here("codes","00_setup.R"))   # dirs, check_additivity(), etc.
 
-## -------------------------
-## 1. Load inputs
-## -------------------------
-raw_TD_indices <- readRDS(file.path(dir_data_interim, "raw_TD_indices.rds"))
-hofman_2003    <- readRDS(file.path(dir_data_interim, "hofman_2003.rds"))
-anchor_1950    <- readRDS(file.path(dir_data_interim, "anchor_1950.rds"))
+############################################################
+## 1. CARGAR INSUMOS
+############################################################
 
-## anchor_1950 has: asset, Kg_1980, Kg_2003, Kn_1980, Kn_2003, phi_g, phi_n
+td_Kg       <- readRDS(file.path(dir_data_interim, "raw_TD_indices.rds"))
+anchor_1950 <- readRDS(file.path(dir_data_interim, "anchor_1950.rds"))
+raw_AD      <- readRDS(file.path(dir_data_interim, "raw_AD.rds"))
 
-## -------------------------
-## 2. Build Kg paths for ME & NRC from TD indices + 1950 anchor
-## -------------------------
-## raw_TD_indices structure (from 01_load_raw.R):
-##   year, asset, var = "Kg_index", value, price_base = "index_1929_100", source
-##
-## We restrict to:
-##   - var == "Kg_index"
-##   - asset in {ME, NRC}
-## Then anchor at 1950:
-##   Kg_1980_{a,t} = Kg_1980_{a,1950} * (index_{a,t} / index_{a,1950})
-##   Kg_2003_{a,t} = phi_g_a * Kg_1980_{a,t}
+# Ventana de años objetivo (alineada con AD)
+years_AD <- raw_AD %>%
+  dplyr::pull(year) %>%
+  unique() %>%
+  sort()
 
-assets_TD_ME_NRC <- c("ME", "NRC")
+############################################################
+## 2. EXTRAER ANCLAS 1950 EN PRECIOS 2003 (ME, NRC, RC)
+############################################################
 
-TD_indices_ME_NRC <- raw_TD_indices %>%
-  filter(var == "Kg_index", asset %in% assets_TD_ME_NRC)
+anchor_Kg_1950 <- anchor_1950 %>%
+  dplyr::filter(prices == 2003, year == 1950) %>%
+  dplyr::select(
+    year,
+    Kg_ME, Kg_NRC, Kg_RC
+  ) %>%
+  tidyr::pivot_longer(
+    cols      = starts_with("Kg_"),
+    names_to  = "asset_raw",
+    values_to = "Kg_2003_anchor"
+  ) %>%
+  dplyr::mutate(asset = sub("^Kg_", "", asset_raw)) %>%
+  dplyr::select(asset, Kg_2003_anchor)
 
-## Extract 1950 index per asset
-TD_index_1950 <- TD_indices_ME_NRC %>%
-  filter(year == 1950) %>%
-  select(asset, index_1950 = value)
-
-if (nrow(TD_index_1950) != length(assets_TD_ME_NRC)) {
-  stop("Tafunell & Ducoing Kg indices must contain year 1950 for ME and NRC.")
+# Chequeos básicos
+needed_assets <- c("ME","NRC","RC")
+if (!all(needed_assets %in% anchor_Kg_1950$asset)) {
+  stop("Faltan Kg_2003_anchor para alguno de: ME, NRC, RC en anchor_1950.rds.")
 }
 
-## Get 1950 Kg_1980 and phi_g from anchor
-anchor_gross_ME_NRC <- anchor_1950 %>%
-  filter(asset %in% assets_TD_ME_NRC) %>%
-  select(asset, Kg_1980_anchor = Kg_1980, phi_g)
+anchor_ME_1950  <- anchor_Kg_1950 %>% dplyr::filter(asset == "ME")  %>% dplyr::pull(Kg_2003_anchor)
+anchor_NRC_1950 <- anchor_Kg_1950 %>% dplyr::filter(asset == "NRC") %>% dplyr::pull(Kg_2003_anchor)
+anchor_RC_1950  <- anchor_Kg_1950 %>% dplyr::filter(asset == "RC")  %>% dplyr::pull(Kg_2003_anchor)
 
-Kg_ME_NRC_2003 <- TD_indices_ME_NRC %>%
-  left_join(TD_index_1950, by = "asset") %>%
-  left_join(anchor_gross_ME_NRC, by = "asset") %>%
-  mutate(
-    ## Kg in 1980 CLP along TD path, anchored at Hofman 1950 level
-    Kg_1980_t = Kg_1980_anchor * (value / index_1950),
-    ## Convert to 2003 CLP using phi_g from the anchor
-    Kg_2003_t = phi_g * Kg_1980_t
+############################################################
+## 3. CAMINOS TD-2016 PARA ME Y NRC
+############################################################
+
+kg_td_assets <- c("ME","NRC")
+
+td_prim <- td_Kg %>%
+  dplyr::filter(
+    var   == "Kg_index",
+    asset %in% kg_td_assets
+  )
+
+# Años con índice TD
+years_TD <- sort(unique(td_prim$year))
+
+# Intersección con AD: sólo donde ambas fuentes existen
+years_use <- intersect(years_AD, years_TD)
+
+if (length(years_use) == 0) {
+  stop("No hay intersección de años entre AD y TD-2016 para construir Kg.")
+}
+
+td_prim <- td_prim %>%
+  dplyr::filter(year %in% years_use)
+
+# Índice equivalente a 1950 por activo (interpolación/extrapolación lineal)
+td_1950 <- td_prim %>%
+  dplyr::group_by(asset) %>%
+  dplyr::summarise(
+    idx_1950 = approx(
+      x    = year,
+      y    = value,
+      xout = 1950,
+      rule = 2   # extrapola fuera de rango si hace falta
+    )$y,
+    .groups = "drop"
+  )
+
+if (any(is.na(td_1950$idx_1950))) {
+  warning("Algún activo tiene idx_1950 NA tras interpolación; revisar raw_TD_indices.rds.")
+}
+
+############################################################
+## 4. CONSTRUIR Kg_2003 PARA ME Y NRC (TD + ancla 1950)
+############################################################
+
+anchor_Kg_1950_MENRC <- anchor_Kg_1950 %>%
+  dplyr::filter(asset %in% kg_td_assets)
+
+Kg_ME_NRC <- td_prim %>%
+  dplyr::left_join(td_1950,              by = "asset") %>%
+  dplyr::left_join(anchor_Kg_1950_MENRC, by = "asset") %>%
+  dplyr::mutate(
+    Kg_2003 = Kg_2003_anchor * (value / idx_1950)
   ) %>%
-  transmute(
+  dplyr::transmute(
     year,
     asset,
-    var        = "Kg",
-    value      = Kg_2003_t,
-    price_base = "2003_CLP",
-    source     = "TD_index_anchored_Hofman1950"
-  ) %>%
-  arrange(year, asset)
-
-## -------------------------
-## 3. Construct Kg_NR as ME + NRC (2003 CLP)
-## -------------------------
-Kg_NR_2003 <- Kg_ME_NRC_2003 %>%
-  select(year, asset, value) %>%
-  pivot_wider(
-    names_from  = asset,
-    values_from = value
-  ) %>%
-  mutate(
-    NR = ME + NRC
-  ) %>%
-  select(year, NR) %>%
-  pivot_longer(
-    cols      = -year,
-    names_to  = "asset",
-    values_to = "value"
-  ) %>%
-  mutate(
+    value      = Kg_2003,
     var        = "Kg",
     price_base = "2003_CLP",
-    source     = "Derived_NR_ME_plus_NRC_TDpath"
-  ) %>%
-  arrange(year, asset)
+    source     = "TD_2016_index + Hofman_1950_anchor"
+  )
 
-## -------------------------
-## 4. Use Hofman Kg (2003 CLP) for RC, C, T (1950–1994)
-## -------------------------
-## hofman_2003 structure:
-##   year, asset, var, value, price_base = "2003_CLP", source (Hofman2000_K_2003, etc.)
-##
-## We restrict to:
-##   - var == "Kg"
-##   - asset in {RC, C, T}
-##   - year in 1950–1994
-assets_Hofman_RCCT <- c("RC", "C", "T")
+############################################################
+## 5. CONSTRUIR RC_t PROPORCIONAL A NRC_t (OPCIÓN 1)
+############################################################
 
-Kg_RCCT_2003 <- hofman_2003 %>%
-  filter(
-    var == "Kg",
-    asset %in% assets_Hofman_RCCT,
-    year >= 1950,
-    year <= 1994
-  ) %>%
-  arrange(year, asset)
+# NRC_t ya está en Kg_ME_NRC; usamos su trayectoria para escalar RC.
+# Fórmula: RC_t = RC_1950 * (NRC_t / NRC_1950)
 
-## -------------------------
-## 5. Combine all Kg series into one panel
-## -------------------------
-Kg_2003 <- bind_rows(
-  Kg_ME_NRC_2003,
-  Kg_NR_2003,
-  Kg_RCCT_2003
-) %>%
-  arrange(year, asset)
+Kg_RC <- Kg_ME_NRC %>%
+  dplyr::filter(asset == "NRC") %>%
+  dplyr::mutate(
+    asset      = "RC",
+    value      = anchor_RC_1950 * (value / anchor_NRC_1950),
+    var        = "Kg",
+    price_base = "2003_CLP",
+    source     = "RC_scaled_from_NRC_TD + Hofman_1950_anchor"
+  )
 
-saveRDS(Kg_2003, file = file.path(dir_data_interim, "Kg_2003.rds"))
+############################################################
+## 6. AGREGAR TODOS LOS ACTIVOS PRIMITIVOS (ME, NRC, RC)
+############################################################
 
-## -------------------------
-## 6. Additivity check for Kg
-## -------------------------
-Kg_2003_additivity <- check_additivity(Kg_2003, "Kg")
-
-saveRDS(
-  Kg_2003_additivity,
-  file = file.path(dir_data_interim, "Kg_2003_additivity_residuals.rds")
+Kg_prim_all <- dplyr::bind_rows(
+  Kg_ME_NRC,
+  Kg_RC
 )
 
 ############################################################
-## End of 04_build_Kg_2003.R
+## 7. CONSTRUIR AGREGADOS NR, C, T POR IDENTIDADES
+############################################################
+
+Kg_wide <- Kg_prim_all %>%
+  dplyr::select(year, asset, value) %>%
+  tidyr::pivot_wider(
+    names_from  = asset,
+    values_from = value
+  )
+
+Kg_wide <- Kg_wide %>%
+  dplyr::mutate(
+    NR = ME + NRC,
+    C  = NRC + RC,
+    T  = ME + NRC + RC
+  )
+
+Kg_all <- Kg_wide %>%
+  tidyr::pivot_longer(
+    cols      = c("ME","NRC","RC","C","NR","T"),
+    names_to  = "asset",
+    values_to = "value"
+  ) %>%
+  dplyr::mutate(
+    var        = "Kg",
+    price_base = "2003_CLP",
+    source     = dplyr::case_when(
+      asset %in% c("ME","NRC") ~ "TD_2016_index + Hofman_1950_anchor",
+      asset == "RC"            ~ "RC_scaled_from_NRC_TD + Hofman_1950_anchor",
+      TRUE                     ~ "Implied_by_identities_from_primitive_assets"
+    )
+  ) %>%
+  dplyr::arrange(year, asset)
+
+############################################################
+## 8. GUARDAR Kg_2003 Y CHEQUEAR ADITIVIDAD
+############################################################
+
+Kg_2003 <- Kg_all
+saveRDS(Kg_2003, file.path(dir_data_interim, "Kg_2003.rds"))
+
+Kg_2003_add <- check_additivity(Kg_2003, "Kg")
+saveRDS(Kg_2003_add, file.path(dir_data_interim, "Kg_2003_additivity_residuals.rds"))
+
+message(">>> 04_build_Kg_2003.R completado: Kg_2003 y residuos de aditividad guardados (Opción 1: RC ∝ NRC).")
+############################################################
+## FIN DE 04_build_Kg_2003.R
 ############################################################

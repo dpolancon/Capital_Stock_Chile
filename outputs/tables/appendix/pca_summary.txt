@@ -1,0 +1,8 @@
+Importance of components:
+                          PC1    PC2
+Standard deviation     1.3165 0.5165
+Proportion of Variance 0.8666 0.1334
+Cumulative Proportion  0.8666 1.0000
+            PC1        PC2
+delta 0.7071068 -0.7071068
+z     0.7071068  0.7071068

@@ -1,0 +1,124 @@
+\documentclass[11pt]{article}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage[margin=1in]{geometry}
+
+% Fix undefined control sequences:
+\usepackage{amsmath}          % for \text{}, math operators
+\usepackage{threeparttable}   % for table notes
+\usepackage{caption}          % improves table handling
+\usepackage{pdflscape}
+\usepackage{booktabs}
+
+
+\title{Stock--Flow Consistency Validation Report}
+\date{}
+\begin{document}
+	
+	\maketitle
+	
+	\section*{1. SFC Rate Summary Table}
+	
+	\input{tables/sfc_rate_summary.tex}
+	
+	\newpage
+	\section*{2. Splice Diagnostics (1949 $\rightarrow$ 1950)}
+	
+	\input{tables/splice_summary_1950.tex}
+	
+	\bigskip
+	
+	\section*{Worst Splice Jumps Across All Variables}
+	
+	\input{tables/splice_worst_jumps.tex}
+	
+	\newpage
+	\section*{3. Time-Series Diagnostics for Rates}
+	
+	\subsection*{Depreciation Rate $\delta_t$}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.95\textwidth]{plots/delta_timeseries.pdf}
+	\end{figure}
+	
+	\subsection*{Depletion Rate $z_t$}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.95\textwidth]{plots/z_timeseries.pdf}
+	\end{figure}
+	
+	\subsection*{Investment--Capital Ratio $i_t$}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.95\textwidth]{plots/i_timeseries.pdf}
+	\end{figure}
+	
+	\newpage
+	\section*{4. Splice Jump Validation Plots}
+	
+	\subsection*{Gross Investment $Ig$}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.95\textwidth]{plots/splice_jump_Ig.pdf}
+	\end{figure}
+	
+	\subsection*{Gross Capital Stock $K^g$}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.95\textwidth]{plots/splice_jump_Kg.pdf}
+	\end{figure}
+	
+	\subsection*{Net Capital Stock $K^n$}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.95\textwidth]{plots/splice_jump_Kn.pdf}
+	\end{figure}
+	
+	\subsection*{Depreciation Rate $\delta_t$}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.95\textwidth]{plots/splice_jump_delta.pdf}
+	\end{figure}
+	
+	\subsection*{Depletion Rate $z_t$}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.95\textwidth]{plots/splice_jump_z.pdf}
+	\end{figure}
+	
+	\subsection*{Investment--Capital Ratio $i_t$}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.95\textwidth]{plots/splice_jump_i.pdf}
+	\end{figure}
+	
+	\subsection*{Net Fixed Capital Formation (FNKF)}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.95\textwidth]{plots/splice_jump_FNKF.pdf}
+	\end{figure}
+	
+	\newpage
+	\section*{5. Additivity Checks}
+	
+	\subsection*{Additivity Residuals: $Ig$}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.95\textwidth]{plots/additivity_Ig.pdf}
+	\end{figure}
+	
+	\subsection*{Additivity Residuals: $K^g$}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.95\textwidth]{plots/additivity_Kg.pdf}
+	\end{figure}
+	
+	\subsection*{Additivity Residuals: $K^n$}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.95\textwidth]{plots/additivity_Kn.pdf}
+	\end{figure}
+	
+\end{document}

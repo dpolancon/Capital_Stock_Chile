@@ -1,0 +1,544 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage{csvsimple}
+\setstretch{1.1}
+
+\title{Extended SFC Priors Report \\ \large and Outlier Diagnostics}
+\author{Diego Polanco --- Capital Stock Reconstruction Project}
+\date{\today}
+
+\begin{document}
+	
+	\maketitle
+	
+	
+	% ============================================================
+	\section{Introduction}
+	% ============================================================
+	
+	This report compiles all graphical outputs from the extended priors module 
+	(\texttt{09\_sfc\_extended\_reports\_v2.R}).  
+	It is structured by asset and includes:
+	
+	\begin{itemize}
+		\item Histograms of $\delta_t$ and $z_t$
+		\item Kernel densities of $\delta_t$ and $z_t$ by historical window
+		\item Time series of $\delta_t$ and $z_t$ with p10--p90 prior bands
+		\item Time series of $q_t = K^g / K^n$ with prior bands
+		\item The $\delta$--$z$ plane with outlier classification
+	\end{itemize}
+	
+	All plots are drawn directly from harmonized and SFC-complete data, without reconstruction steps.
+	
+	A concise narrative can be added after you inspect the figures.
+	
+	
+	% ============================================================
+	\section{How to Read This Report}
+	% ============================================================
+	
+	Each asset subsection follows a consistent pattern:
+	
+	\begin{enumerate}
+		\item \textbf{Distribution of implicit rates}  
+		Histograms show the raw shape of $\delta_t$ and $z_t$.  
+		Densities by historical regime show shifts in volatility, persistence, and structural breaks.
+		
+		\item \textbf{Time-path with Prior Bands}  
+		Red dashed lines indicate p10–p90 ranges calibrated on 1950–1994 (high-quality window).
+		
+		\item \textbf{$q_t$ ratio path}  
+		This is a structural diagnostic of the relationship between gross and net stock valuation.
+		
+		\item \textbf{Outlier map in $\delta$–$z$ space}  
+		This identifies years where implicit retirement and depreciation jointly deviate from priors.
+	\end{enumerate}
+	
+	The entire report is designed for data triage prior to reconstruction.
+	
+	
+	% ============================================================
+	\section{Machinery \& Equipment (ME)}
+	% ============================================================
+	
+	\subsection{Distribution Diagnostics}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.9\linewidth]{delta_hist_ME.png}
+		\caption{$\delta_t$ histogram (ME)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.9\linewidth]{delta_density_ME.png}
+		\caption{$\delta_t$ kernel density by historical period (ME)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.9\linewidth]{z_hist_ME.png}
+		\caption{$z_t$ histogram (ME)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.9\linewidth]{z_density_ME.png}
+		\caption{$z_t$ kernel density by period (ME)}
+	\end{figure}
+	
+	\subsection{Temporal Priors}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.9\linewidth]{delta_time_ME.png}
+		\caption{$\delta_t$ time-path with priors (ME)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.9\linewidth]{z_time_ME.png}
+		\caption{$z_t$ time-path with priors (ME)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.9\linewidth]{q_time_ME.png}
+		\caption{$q_t = K^g/K^n$ time-path with prior bands (ME)}
+	\end{figure}
+	
+	\subsection{Outlier Geometry}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.9\linewidth]{delta_z_plane_ME.png}
+		\caption{$\delta$–$z$ plane with outlier classification (ME)}
+	\end{figure}
+	
+	
+	\subsection{Correlation Matrix}
+	
+	\begin{table}[H]
+		\centering
+		\begin{tabular}{lcccc}
+			\toprule
+			& $\delta$ & $z$ & $dKg$ & $dKn$ \\
+			\midrule
+			$\delta$ & 1.000 & 0.649 & 0.432 & 0.286 \\
+			$z$      & 0.649 & 1.000 & 0.761 & 0.664 \\
+			$dKg$    & 0.432 & 0.761 & 1.000 & 0.859 \\
+			$dKn$    & 0.286 & 0.664 & 0.859 & 1.000 \\
+			\bottomrule
+		\end{tabular}
+	\end{table}
+	
+	
+	% ============================================================
+	\section{Non-Residential Construction (NRC)}
+	% ============================================================
+	
+	\subsection{Distribution Diagnostics}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_hist_NRC.png}
+		\caption{$\delta_t$ histogram (NRC)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_density_NRC.png}
+		\caption{$\delta_t$ kernel density by historical period (NRC)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{z_hist_NRC.png}
+		\caption{$z_t$ histogram (NRC)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{z_density_NRC.png}
+		\caption{$z_t$ kernel density by period (NRC)}
+	\end{figure}
+	
+	\subsection{Temporal Priors}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_time_NRC.png}
+		\caption{$\delta_t$ time-path with priors (NRC)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{z_time_NRC.png}
+		\caption{$z_t$ time-path with priors (NRC)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{q_time_NRC.png}
+		\caption{$q_t = K^g/K^n$ time-path with prior bands (NRC)}
+	\end{figure}
+	
+	\subsection{Outlier Geometry}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_z_plane_NRC.png}
+		\caption{$\delta$--$z$ outlier plane (NRC)}
+	\end{figure}
+	
+	\subsection{Correlation Matrix}
+	
+	\begin{table}[H]
+		\centering
+		\begin{tabular}{lcccc}
+			\toprule
+			& $\delta$ & $z$ & $dKg$ & $dKn$ \\
+			\midrule
+			$\delta$ & 1.000 & 0.939 & 0.550 & 0.524 \\
+			$z$      & 0.939 & 1.000 & 0.324 & 0.291 \\
+			$dKg$    & 0.550 & 0.324 & 1.000 & 0.981 \\
+			$dKn$    & 0.524 & 0.291 & 0.981 & 1.000 \\
+			\bottomrule
+		\end{tabular}
+	\end{table}
+	
+	
+	
+	% ============================================================
+	\section{Residential Construction (RC)}
+	% ============================================================
+	
+	\subsection{Distribution Diagnostics}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_hist_RC.png}
+		\caption{$\delta_t$ histogram (RC)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_density_RC.png}
+		\caption{$\delta_t$ density by historical period (RC)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{z_hist_RC.png}
+		\caption{$z_t$ histogram (RC)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{z_density_RC.png}
+		\caption{$z_t$ density by historical period (RC)}
+	\end{figure}
+	
+	\subsection{Temporal Priors}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_time_RC.png}
+		\caption{$\delta_t$ time-path with priors (RC)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{z_time_RC.png}
+		\caption{$z_t$ time-path with priors (RC)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{q_time_RC.png}
+		\caption{$q_t = K^g/K^n$ time-path (RC)}
+	\end{figure}
+	
+	\subsection{Outlier Geometry}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_z_plane_RC.png}
+		\caption{$\delta$--$z$ outlier plane (RC)}
+	\end{figure}
+	
+	\subsection{Correlation Matrix}
+	
+	\begin{table}[H]
+		\centering
+		\begin{tabular}{lcccc}
+			\toprule
+			& $\delta$ & $z$ & $dKg$ & $dKn$ \\
+			\midrule
+			$\delta$ & 1.000 & 0.965 & 0.850 & 0.826 \\
+			$z$      & 0.965 & 1.000 & 0.733 & 0.738 \\
+			$dKg$    & 0.850 & 0.733 & 1.000 & 0.932 \\
+			$dKn$    & 0.826 & 0.738 & 0.932 & 1.000 \\
+			\bottomrule
+		\end{tabular}
+	\end{table}
+	
+	
+
+	
+	
+	% ============================================================
+	\section{Non-Residential Aggregate (NR)}
+	% ============================================================
+	
+	\subsection{Distribution Diagnostics}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_hist_NR.png}
+		\caption{$\delta_t$ histogram (NR)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_density_NR.png}
+		\caption{$\delta_t$ density by period (NR)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{z_hist_NR.png}
+		\caption{$z_t$ histogram (NR)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{z_density_NR.png}
+		\caption{$z_t$ density by period (NR)}
+	\end{figure}
+	
+	\subsection{Temporal Priors}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_time_NR.png}
+		\caption{$\delta_t$ time-path with priors (NR)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{z_time_NR.png}
+		\caption{$z_t$ time-path with priors (NR)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{q_time_NR.png}
+		\caption{$q_t = K^g/K^n$ time-path (NR)}
+	\end{figure}
+	
+	\subsection{Outlier Geometry}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_z_plane_NR.png}
+		\caption{$\delta$–$z$ outlier map (NR)}
+	\end{figure}
+	
+	\subsection{Correlation Matrix}
+	
+	\begin{table}[H]
+		\centering
+		\begin{tabular}{lcccc}
+			\toprule
+			& $\delta$ & $z$ & $dKg$ & $dKn$ \\
+			\midrule
+			$\delta$ & 1.000 & 0.965 & 0.742 & 0.668 \\
+			$z$      & 0.965 & 1.000 & 0.736 & 0.650 \\
+			$dKg$    & 0.742 & 0.736 & 1.000 & 0.944 \\
+			$dKn$    & 0.668 & 0.650 & 0.944 & 1.000 \\
+			\bottomrule
+		\end{tabular}
+	\end{table}
+	
+	
+	
+	% ============================================================
+	\section{Total Capital (T)}
+	% ============================================================
+	
+	\subsection{Distribution Diagnostics}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_hist_T.png}
+		\caption{$\delta_t$ histogram (Total Capital)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_density_T.png}
+		\caption{$\delta_t$ density by period (Total Capital)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{z_hist_T.png}
+		\caption{$z_t$ histogram (Total Capital)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{z_density_T.png}
+		\caption{$z_t$ density by period (Total Capital)}
+	\end{figure}
+	
+	\subsection{Temporal Priors}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_time_T.png}
+		\caption{$\delta_t$ time-path with priors (Total Capital)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{z_time_T.png}
+		\caption{$z_t$ time-path with priors (Total Capital)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{q_time_T.png}
+		\caption{$q_t = K^g/K^n$ time-path (Total Capital)}
+	\end{figure}
+	
+	\subsection{Outlier Geometry}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_z_plane_T.png}
+		\caption{$\delta$–$z$ outlier plane (Total Capital)}
+	\end{figure}
+	
+	
+	\subsection{Correlation Matrix}
+	
+	\begin{table}[H]
+		\centering
+		\begin{tabular}{lcccc}
+			\toprule
+			& $\delta$ & $z$ & $dKg$ & $dKn$ \\
+			\midrule
+			$\delta$ & 1.000 & 0.996 & 0.819 & 0.814 \\
+			$z$      & 0.996 & 1.000 & 0.830 & 0.845 \\
+			$dKg$    & 0.819 & 0.830 & 1.000 & 0.888 \\
+			$dKn$    & 0.814 & 0.845 & 0.888 & 1.000 \\
+			\bottomrule
+		\end{tabular}
+	\end{table}
+	
+	
+	% ============================================================
+	\section{Aggregate Construction (C)}
+	% ============================================================
+	
+	\subsection{Distribution Diagnostics}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_hist_C.png}
+		\caption{$\delta_t$ histogram (C)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_density_C.png}
+		\caption{$\delta_t$ density by period (C)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{z_hist_C.png}
+		\caption{$z_t$ histogram (C)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{z_density_C.png}
+		\caption{$z_t$ density by period (C)}
+	\end{figure}
+	
+	\subsection{Temporal Priors}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_time_C.png}
+		\caption{$\delta_t$ time-path with priors (C)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{z_time_C.png}
+		\caption{$z_t$ time-path with priors (C)}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{q_time_C.png}
+		\caption{$q_t = K^g/K^n$ path (C)}
+	\end{figure}
+	
+	\subsection{Outlier Geometry}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\linewidth]{delta_z_plane_C.png}
+		\caption{$\delta$–$z$ outlier geometry (C)}
+	\end{figure}
+	
+	\subsection{Correlation Matrix}
+
+	\begin{table}[H]
+	\centering
+	\begin{tabular}{lcccc}
+		\toprule
+		& $\delta$ & $z$ & $dKg$ & $dKn$ \\
+		\midrule
+		$\delta$ & 1.000 & 0.996 & 0.804 & 0.790 \\
+		$z$      & 0.996 & 1.000 & 0.798 & 0.803 \\
+		$dKg$    & 0.804 & 0.798 & 1.000 & 0.889 \\
+		$dKn$    & 0.790 & 0.803 & 0.889 & 1.000 \\
+		\bottomrule
+	\end{tabular}
+	\end{table}
+	
+	
+	% ============================================================
+	\section{Next Steps}
+	% ============================================================
+	
+	The outputs in this document prepare the ground for:
+	
+	\begin{itemize}
+		\item deciding where implicit reconstruction is needed,
+		\item determining which priors must anchor spline or filtering methods,
+		\item identifying periods where data must be backcasted using SFC identities.
+	\end{itemize}
+	
+.
+	
+\end{document}

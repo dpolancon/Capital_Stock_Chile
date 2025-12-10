@@ -1,143 +1,94 @@
 ############################################################
-## 03_build_Ig_2003.R
-## Project: Stock–flow consistent capital stock reconstruction (Chile)
+## 03_build_Ig_2003.R — TD–SFC COMPLIANT VERSION
+## Stock–flow consistent capital stock reconstruction (Chile)
 ##
-## Tasks:
-##  - Build AD-consistent Ig in 2003 CLP by asset
-##  - Use Hofman NRC/RC shares in construction to decompose AD construction
-##  - Define Ig_ME, Ig_NRC, Ig_RC, Ig_C, Ig_NR, Ig_T (all 2003 CLP)
-##  - Check additivity (NR = ME + NRC; C = NRC + RC; T = ME + NRC + RC)
-##  - Save Ig_2003.rds in data/interim/
-##
-## NOTE:
-##  - This script assumes Pérez–Eyzaguirre AD file has variables named:
-##      "FBKF_me"           = gross fixed capital formation in machinery & equipment
-##      "FBKF_construction" = gross fixed capital formation in construction
-##    If your variable names differ, change the constants ad_var_Ig_ME and
-##    ad_var_Ig_C below.
+## Objetivo:
+##  - Construir Ig en 2003 CLP por activo (ME, NRC, RC, C, NR, T)
+##  - Usar como insumo canónico Ig_2003_pattern.rds
+##    (Pérez–Eyzaguirre = nivel; Hofman + Tafunell = patrón)
+##  - Verificar identidades de aditividad vía check_additivity()
 ############################################################
 
 ## -------------------------
-## 0. Libraries & setup
+## 0. Librerías y setup
 ## -------------------------
 library(dplyr)
 library(tidyr)
-library(readr)
-library(readxl)
-library(ggplot2)
-library(purrr)
-library(stringr)
+library(here)
+library(rlang)
 
-## Load global directories, assets, helpers
-source("00_setup.R")
+source(here("codes", "00_setup.R"))  # dirs, check_additivity(), etc.
 
 ## -------------------------
-## 1. Load intermediate raw objects
+## 1. Cargar insumos intermedios
 ## -------------------------
-raw_AD        <- readRDS(file.path(dir_data_interim, "raw_AD.rds"))
-raw_hofman_Ig <- readRDS(file.path(dir_data_interim, "raw_hofman_Ig.rds"))
+Ig_2003_pattern <- readRDS(
+  file.path(dir_data_interim, "Ig_2003_pattern.rds")
+)
 
-## -------------------------
-## 2. Identify AD variables for Ig (ME and Construction)
-## -------------------------
-## Adjust these names if your AD dataset uses different labels.
-ad_var_Ig_ME <- "FBKF_me"
-ad_var_Ig_C  <- "FBKF_construction"
-
-## Basic check to avoid silent mismatch
-vars_AD <- unique(raw_AD$var)
-if (!all(c(ad_var_Ig_ME, ad_var_Ig_C) %in% vars_AD)) {
-  stop(
-    "Variables specified in ad_var_Ig_ME / ad_var_Ig_C were not found in raw_AD$var. ",
-    "Available vars are: ",
-    paste(sort(vars_AD), collapse = ", ")
-  )
+# Sanity check mínimo
+if (!all(c("year", "asset", "value") %in% names(Ig_2003_pattern))) {
+  stop("Ig_2003_pattern.rds no tiene las columnas esperadas: year, asset, value.")
 }
 
 ## -------------------------
-## 3. Compute Hofman NRC/RC shares in construction
+## 2. Limpiar y fijar activos base
+##    Usamos ME, NRC y RC como bloques “primitivos”
+##    y construimos C, NR y T como identidades.
 ## -------------------------
-## Using Hofman 2000 Ig (1980 CLP) to get shares:
-##   s_NRC_H_t = Ig_NRC_H / (Ig_NRC_H + Ig_RC_H)
-##   s_RC_H_t  = 1 - s_NRC_H_t
-## These shares are independent of the price base, so we do not
-## convert to 2003 CLP here.
 
-hofman_shares <- raw_hofman_Ig %>%
-  filter(asset %in% c("NRC", "RC")) %>%
-  select(year, asset, value) %>%
-  pivot_wider(
+# Nos quedamos solo con las filas relevantes
+Ig_base <- Ig_2003_pattern %>%
+  filter(asset %in% c("ME", "NRC", "RC")) %>%
+  select(year, asset, value)
+
+# Chequeo: que no falte ningún asset clave por año
+missing_assets <- Ig_base %>%
+  group_by(year) %>%
+  summarise(miss_assets = setdiff(c("ME","NRC","RC"), asset), .groups = "drop") %>%
+  filter(length(miss_assets) > 0)
+
+if (nrow(missing_assets) > 0) {
+  warning("Hay años con activos ME/NRC/RC faltantes en Ig_2003_pattern.\n",
+          "Revisar objeto Ig_2003_pattern.rds antes de seguir.")
+}
+
+## -------------------------
+## 3. Construir panel ancho con ME, NRC, RC
+## -------------------------
+Ig_wide <- Ig_base %>%
+  tidyr::pivot_wider(
     names_from  = asset,
     values_from = value
-  ) %>%
-  mutate(
-    total_C = NRC + RC,
-    s_NRC   = dplyr::if_else(total_C > 0, NRC / total_C, NA_real_),
-    s_RC    = dplyr::if_else(total_C > 0, RC  / total_C, NA_real_)
-  ) %>%
-  select(year, s_NRC, s_RC)
-
-## Extend shares to full AD year range by carrying forward and backward
-## the nearest available year. This implements the rule:
-## "For years without shares, use constant shares from the nearest period."
-years_AD <- raw_AD %>%
-  distinct(year) %>%
-  arrange(year)
-
-hofman_shares_full <- years_AD %>%
-  left_join(hofman_shares, by = "year") %>%
-  arrange(year) %>%
-  tidyr::fill(s_NRC, s_RC, .direction = "downup")
-
-## -------------------------
-## 4. Extract ME and Construction Ig from AD (2003 CLP)
-## -------------------------
-AD_Ig_components <- raw_AD %>%
-  filter(var %in% c(ad_var_Ig_ME, ad_var_Ig_C)) %>%
-  select(year, var, value) %>%
-  pivot_wider(
-    names_from  = var,
-    values_from = value
-  ) %>%
-  ## Rename to clean internal labels
-  rename(
-    Ig_ME_AD = !!ad_var_Ig_ME,
-    Ig_C_AD  = !!ad_var_Ig_C
-  ) %>%
-  arrange(year)
-
-## -------------------------
-## 5. Decompose AD construction into NRC and RC using Hofman shares
-## -------------------------
-Ig_decomp <- AD_Ig_components %>%
-  left_join(hofman_shares_full, by = "year") %>%
-  mutate(
-    ## Core assumption: Hofman NRC/RC shares apply to AD construction
-    ## (both in 2003 CLP).
-    Ig_NRC_2003 = s_NRC * Ig_C_AD,
-    Ig_RC_2003  = s_RC  * Ig_C_AD,
-    ## AD machinery Ig is taken as-is for ME:
-    Ig_ME_2003  = Ig_ME_AD,
-    ## Construction, NR, and total:
-    Ig_C_2003   = Ig_NRC_2003 + Ig_RC_2003,
-    Ig_NR_2003  = Ig_ME_2003  + Ig_NRC_2003,
-    Ig_T_2003   = Ig_ME_2003  + Ig_C_2003
   )
 
 ## -------------------------
-## 6. Build long-format Ig panel (2003 CLP)
+## 4. Construir agregados C, NR, T por identidades
+## -------------------------
+Ig_decomp <- Ig_wide %>%
+  mutate(
+    Ig_ME_2003  = ME,
+    Ig_NRC_2003 = NRC,
+    Ig_RC_2003  = RC,
+    Ig_C_2003   = Ig_NRC_2003 + Ig_RC_2003,
+    Ig_NR_2003  = Ig_ME_2003  + Ig_NRC_2003,
+    Ig_T_2003   = Ig_ME_2003  + Ig_C_2003
+  ) %>%
+  select(
+    year,
+    ME  = Ig_ME_2003,
+    NRC = Ig_NRC_2003,
+    RC  = Ig_RC_2003,
+    C   = Ig_C_2003,
+    NR  = Ig_NR_2003,
+    T   = Ig_T_2003
+  )
+
+## -------------------------
+## 5. Panel largo final Ig_2003
 ## -------------------------
 Ig_2003 <- Ig_decomp %>%
-  transmute(
-    year,
-    ME = Ig_ME_2003,
-    NRC = Ig_NRC_2003,
-    RC = Ig_RC_2003,
-    C  = Ig_C_2003,
-    NR = Ig_NR_2003,
-    T  = Ig_T_2003
-  ) %>%
-  pivot_longer(
+  tidyr::pivot_longer(
     cols      = -year,
     names_to  = "asset",
     values_to = "value"
@@ -145,20 +96,15 @@ Ig_2003 <- Ig_decomp %>%
   mutate(
     var        = "Ig",
     price_base = "2003_CLP",
-    source     = "AD_plus_Hofman_shares"
+    source     = "AD (niveles) + Hofman & Tafunell (patrones)"
   ) %>%
-  select(year, asset, var, value, price_base, source) %>%
   arrange(year, asset)
 
-saveRDS(Ig_2003, file = file.path(dir_data_interim, "Ig_2003.rds"))
+saveRDS(Ig_2003, file.path(dir_data_interim, "Ig_2003.rds"))
 
 ## -------------------------
-## 7. Additivity check for Ig
+## 6. Chequeo de aditividad para Ig
 ## -------------------------
-## This checks:
-##   NR ?= ME + NRC
-##   C  ?= NRC + RC
-##   T  ?= ME + NRC + RC
 Ig_2003_additivity <- check_additivity(Ig_2003, "Ig")
 
 saveRDS(
@@ -166,6 +112,7 @@ saveRDS(
   file = file.path(dir_data_interim, "Ig_2003_additivity_residuals.rds")
 )
 
+message(">>> 03_build_Ig_2003.R completado: Ig_2003 y residuos de aditividad guardados.")
 ############################################################
-## End of 03_build_Ig_2003.R
+## Fin de 03_build_Ig_2003.R
 ############################################################

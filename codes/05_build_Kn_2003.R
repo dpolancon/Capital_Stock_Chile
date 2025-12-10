@@ -1,227 +1,245 @@
 ############################################################
-## 05_build_Kn_2003.R
-## Project: Stock–flow consistent capital stock reconstruction (Chile)
+## 05_build_Kn_2003.R  — TD–SFC COMPLIANT VERSION
+## Reconstrucción SFC del stock NETO (Kn) en 2003 CLP
 ##
-## Tasks:
-##  - Use Clio-Lab net capital stocks (Kn) as backbone for ME, C, T
-##  - Use Hofman Kn for NRC, RC (1950–1994) in 2003 CLP
-##  - Outside 1950–1994, decompose Clio-Lab Kn_C into NRC & RC
-##    using Hofman stock shares (θ_NRC, θ_RC)
-##  - Define Kn_NR = Kn_ME + Kn_NRC
-##  - Combine all Kn series into a single 2003 CLP panel
-##  - Check additivity (NR = ME + NRC; C = NRC + RC; T = ME + NRC + RC)
-##  - Save Kn_2003.rds and additivity residuals in data/interim/
+## Principles:
+##  1) Hofman is the only benchmark for levels, 1950–1994.
+##  2) Clio-Lab provides ONLY relative profiles pre-1950
+##     for ME (machinery) and INF/C (total infrastructure).
+##  3) The NRC / RC split comes EXCLUSIVELY
+##     from the Hofman shares in 1950.
+##
+## Strategy:
+##  - Pre-1950 (1900–1949):
+##      * Kn_ME(t) = Kn_ME_2003(1950) * SK_MAQ(t) / SK_MAQ(1950)
+##      * Kn_C(t)  = Kn_C_2003(1950)  * SK_INF(t) / SK_INF(1950)
+##      * NRC, RC via Hofman 1950 shares: θ_NRC, θ_RC
+##      * NR = ME + NRC; T = ME + NRC + RC
+##
+##  - 1950–1994:
+##      * Kn_ME, Kn_NRC, Kn_RC taken directly from Hofman (1980 CLP),
+##        scaled to 2003 CLP using anchor_1950 (asset-specific factor φ_a).
+##      * C, NR, T are reconstructed using identities.
+##
+##  - Output:
+##      * Kn_2003.rds  (Kn by asset in 2003 CLP, 1900–1994)
+##      * Kn_2003_additivity_residuals.rds (SFC check)
 ############################################################
 
-## -------------------------
-## 0. Libraries & setup
-## -------------------------
 library(dplyr)
 library(tidyr)
-library(readr)
-library(readxl)
-library(ggplot2)
-library(purrr)
-library(stringr)
+library(here)
 
-## Load global directories, assets, helpers
-source("00_setup.R")
+source(here("codes","00_setup.R"))  # define dirs, check_additivity(), etc.
 
-## -------------------------
-## 1. Load inputs
-## -------------------------
-clio_Kn_2003 <- readRDS(file.path(dir_data_interim, "clio_Kn_2003.rds"))
-hofman_2003  <- readRDS(file.path(dir_data_interim, "hofman_2003.rds"))
-anchor_1950  <- readRDS(file.path(dir_data_interim, "anchor_1950.rds"))  # kept for reference
+dir_int <- here("data","interim")
 
-## clio_Kn_2003 structure (from 02_harmonize_units.R):
-##   year, asset, var = "Kn", value, price_base = "2003_CLP",
-##   source = "ClioLab_Kn_anchored1950" or "ClioLab_Kn"
+############################################################
+## 1. Cargar insumos
+############################################################
 
-## hofman_2003 structure:
-##   year, asset, var (Ig, Kg, Kn), value, price_base = "2003_CLP", source
+raw_clio_Kn  <- readRDS(file.path(dir_int, "raw_clio_Kn.rds"))
+raw_hofman_K <- readRDS(file.path(dir_int, "raw_hofman_K.rds"))
+anchor_1950  <- readRDS(file.path(dir_int, "anchor_1950.rds"))
 
-## -------------------------
-## 2. Clio-Lab backbone for ME, C, T (Kn in 2003 CLP)
-## -------------------------
-backbone_assets <- c("ME", "C", "T")
+# Ventana objetivo del proyecto (ya acordada)
+years_pre  <- 1900:1949
+years_post <- 1950:1994
 
-Kn_backbone <- clio_Kn_2003 %>%
-  filter(var == "Kn", asset %in% backbone_assets) %>%
+############################################################
+## 2. FACTORES DE CONVERSIÓN Kn_1980 → Kn_2003 (HOFMAN)
+##    Usamos anchor_1950 para obtener φ_a por activo.
+############################################################
+
+# Kn en 1980 CLP (Hofman)
+kn_1980 <- anchor_1950 %>%
+  filter(prices == 1980, year == 1950) %>%
+  select(starts_with("Kn_")) %>%
+  pivot_longer(
+    cols      = everything(),
+    names_to  = "asset_raw",
+    values_to = "Kn_1980"
+  ) %>%
+  mutate(asset = sub("^Kn_", "", asset_raw)) %>%
+  select(asset, Kn_1980)
+
+# Kn en 2003 CLP (ancla ya convertida)
+kn_2003 <- anchor_1950 %>%
+  filter(prices == 2003, year == 1950) %>%
+  select(starts_with("Kn_")) %>%
+  pivot_longer(
+    cols      = everything(),
+    names_to  = "asset_raw",
+    values_to = "Kn_2003"
+  ) %>%
+  mutate(asset = sub("^Kn_", "", asset_raw)) %>%
+  select(asset, Kn_2003)
+
+kn_conv <- kn_1980 %>%
+  inner_join(kn_2003, by = "asset") %>%
+  mutate(phi = Kn_2003 / Kn_1980)
+
+# Guardamos por si hace falta inspeccionar luego
+saveRDS(kn_conv, file.path(dir_int, "Kn_conversion_factors_1950.rds"))
+
+############################################################
+## 3. PRE-1950 (1900–1949): Clio escalado a Hofman 1950
+############################################################
+##  - Usamos Clio solo para ME y C (infraestructura total).
+##  - Anclamos niveles a Kn_2003 (1950) de anchor_1950.
+##  - NRC, RC se generan con shares de Hofman 1950.
+
+## 3.1. Extraer Clio Kn para ME y C (incluyendo 1950 para base)
+
+clio_backbone <- raw_clio_Kn %>%
+  filter(var == "Kn",
+         asset %in% c("ME","C"),
+         year %in% c(years_pre, 1950)) %>%
+  arrange(asset, year)
+
+# Valores base 1950 (índice de Clio)
+me_base_1950 <- clio_backbone %>%
+  filter(asset == "ME", year == 1950) %>%
+  pull(value) %>%
+  unique()
+
+c_base_1950 <- clio_backbone %>%
+  filter(asset == "C", year == 1950) %>%
+  pull(value) %>%
+  unique()
+
+if (length(me_base_1950) != 1 | length(c_base_1950) != 1) {
+  stop("No se encontraron bases únicas Clio ME/C en 1950.")
+}
+
+## 3.2. Anclas Kn_2003(1950) desde anchor_1950
+
+anchor_kn_2003_1950 <- anchor_1950 %>%
+  filter(prices == 2003, year == 1950) %>%
+  select(Kn_ME, Kn_C, Kn_NRC, Kn_RC)
+
+Kn_ME_2003_1950  <- anchor_kn_2003_1950$Kn_ME
+Kn_C_2003_1950   <- anchor_kn_2003_1950$Kn_C
+Kn_NRC_2003_1950 <- anchor_kn_2003_1950$Kn_NRC
+Kn_RC_2003_1950  <- anchor_kn_2003_1950$Kn_RC
+
+theta_NRC_1950 <- Kn_NRC_2003_1950 / Kn_C_2003_1950
+theta_RC_1950  <- Kn_RC_2003_1950  / Kn_C_2003_1950
+
+## 3.3. Construir Kn_ME y Kn_C pre-1950 anclados en 2003 CLP
+
+Kn_ME_pre <- clio_backbone %>%
+  filter(asset == "ME", year %in% years_pre) %>%
+  mutate(
+    value = Kn_ME_2003_1950 * (value / me_base_1950),
+    var   = "Kn",
+    price_base = "2003_CLP",
+    source = "Clio_SK_MAQ_scaled_to_Hofman1950"
+  ) %>%
+  select(year, asset, var, value, price_base, source)
+
+Kn_C_pre <- clio_backbone %>%
+  filter(asset == "C", year %in% years_pre) %>%
+  mutate(
+    value = Kn_C_2003_1950 * (value / c_base_1950),
+    var   = "Kn",
+    price_base = "2003_CLP",
+    source = "Clio_SK_INF_scaled_to_Hofman1950"
+  ) %>%
+  select(year, asset, var, value, price_base, source)
+
+## 3.4. Derivar NRC, RC, NR, T usando shares 1950 de Hofman
+
+Kn_pre_wide <- bind_rows(
+  Kn_ME_pre %>% select(year, asset, value),
+  Kn_C_pre  %>% select(year, asset, value)
+) %>%
+  tidyr::pivot_wider(names_from = asset, values_from = value) %>%
+  mutate(
+    NRC = theta_NRC_1950 * C,
+    RC  = theta_RC_1950  * C,
+    NR  = ME + NRC,
+    T   = ME + NRC + RC
+  )
+
+Kn_pre_long <- Kn_pre_wide %>%
+  pivot_longer(
+    cols      = c("ME","NRC","RC","C","NR","T"),
+    names_to  = "asset",
+    values_to = "value"
+  ) %>%
+  mutate(
+    var        = "Kn",
+    price_base = "2003_CLP",
+    source     = case_when(
+      asset %in% c("ME","C") ~ "Clio_scaled_to_Hofman1950",
+      TRUE                   ~ "Clio_scaled + Hofman1950_shares"
+    )
+  ) %>%
   arrange(year, asset)
 
-## -------------------------
-## 3. Hofman Kn shares for construction (NRC, RC) relative to C
-## -------------------------
-## Use Hofman Kn (1950–1994) to compute:
-##   θ_NRC_t = Kn_NRC_H / Kn_C_H
-##   θ_RC_t  = 1 - θ_NRC_t
-## Shares are computed in 2003 CLP, but same as in 1980 CLP.
+############################################################
+## 4. 1950–1994: Hofman Kn escalado a 2003 CLP
+############################################################
+##  - Tomamos ME, NRC, RC en 1980 CLP desde Hofman.
+##  - Convertimos a 2003 CLP usando φ_a del ancla 1950.
+##  - Reconstituimos C, NR, T por identidades.
 
-hof_Kn_for_shares <- hofman_2003 %>%
-  filter(
-    var == "Kn",
-    asset %in% c("NRC", "RC", "C"),
-    year >= 1950,
-    year <= 1994
-  ) %>%
+hof_kn_prim <- raw_hofman_K %>%
+  filter(var == "Kn",
+         asset %in% c("ME","NRC","RC"),
+         year %in% years_post) %>%
   select(year, asset, value) %>%
-  pivot_wider(
-    names_from  = asset,
-    values_from = value
-  ) %>%
+  arrange(asset, year)
+
+hof_kn_scaled <- hof_kn_prim %>%
+  left_join(kn_conv %>% select(asset, phi), by = "asset") %>%
   mutate(
-    total_C   = C,
-    theta_NRC = dplyr::if_else(total_C > 0, NRC / total_C, NA_real_),
-    theta_RC  = dplyr::if_else(total_C > 0, RC  / total_C, NA_real_)
+    value_2003 = value * phi
   ) %>%
-  select(year, theta_NRC, theta_RC)
+  select(year, asset, value = value_2003)
 
-## -------------------------
-## 4. Extend shares θ_NRC, θ_RC to full Clio-Lab C year range
-## -------------------------
-years_clio_C <- clio_Kn_2003 %>%
-  filter(var == "Kn", asset == "C") %>%
-  distinct(year) %>%
-  arrange(year)
-
-shares_full <- years_clio_C %>%
-  left_join(hof_Kn_for_shares, by = "year") %>%
-  arrange(year) %>%
-  tidyr::fill(theta_NRC, theta_RC, .direction = "downup")
-
-## -------------------------
-## 5. Decompose Clio-Lab Kn_C into NRC & RC (2003 CLP)
-## -------------------------
-Kn_C <- clio_Kn_2003 %>%
-  filter(var == "Kn", asset == "C") %>%
-  select(year, Kn_C_2003 = value)
-
-Kn_NRC_RC_from_C <- Kn_C %>%
-  left_join(shares_full, by = "year") %>%
+Kn_post_wide <- hof_kn_scaled %>%
+  pivot_wider(names_from = asset, values_from = value) %>%
   mutate(
-    Kn_NRC_2003 = theta_NRC * Kn_C_2003,
-    Kn_RC_2003  = theta_RC  * Kn_C_2003
-  ) %>%
-  select(year, Kn_NRC_2003, Kn_RC_2003)
-
-## Wide table with decomposition-based NRC, RC
-Kn_NRC_RC_decomp_wide <- Kn_NRC_RC_from_C %>%
-  transmute(
-    year,
-    NRC_dec = Kn_NRC_2003,
-    RC_dec  = Kn_RC_2003
+    C  = NRC + RC,
+    NR = ME  + NRC,
+    T  = ME  + NRC + RC
   )
 
-## -------------------------
-## 6. Hofman Kn for NRC & RC (1950–1994, 2003 CLP)
-## -------------------------
-Kn_NRC_RC_hof_wide <- hofman_2003 %>%
-  filter(
-    var == "Kn",
-    asset %in% c("NRC", "RC"),
-    year >= 1950,
-    year <= 1994
+Kn_post_long <- Kn_post_wide %>%
+  pivot_longer(
+    cols      = c("ME","NRC","RC","C","NR","T"),
+    names_to  = "asset",
+    values_to = "value"
   ) %>%
-  select(year, asset, value) %>%
-  pivot_wider(
-    names_from  = asset,
-    values_from = value
-  ) %>%
-  transmute(
-    year,
-    NRC_hof = NRC,
-    RC_hof  = RC
-  )
-
-## -------------------------
-## 7. Combine Hofman and decomposition for NRC & RC
-## -------------------------
-## Rule:
-##  - If Hofman Kn exists (1950–1994), use it
-##  - Otherwise, use decomposition of Clio-Lab C
-Kn_NRC_RC_final_wide <- years_clio_C %>%
-  left_join(Kn_NRC_RC_decomp_wide, by = "year") %>%
-  left_join(Kn_NRC_RC_hof_wide,   by = "year") %>%
   mutate(
-    Kn_NRC_2003 = dplyr::if_else(!is.na(NRC_hof), NRC_hof, NRC_dec),
-    Kn_RC_2003  = dplyr::if_else(!is.na(RC_hof),  RC_hof,  RC_dec),
-    source_NRC  = dplyr::if_else(!is.na(NRC_hof),
-                                 "Hofman2000_Kn_2003",
-                                 "ClioLab_C_decomp_shares"),
-    source_RC   = dplyr::if_else(!is.na(RC_hof),
-                                 "Hofman2000_Kn_2003",
-                                 "ClioLab_C_decomp_shares")
-  )
-
-## Long-format NRC & RC panel
-Kn_NRC_long <- Kn_NRC_RC_final_wide %>%
-  transmute(
-    year,
-    asset      = "NRC",
     var        = "Kn",
-    value      = Kn_NRC_2003,
     price_base = "2003_CLP",
-    source     = source_NRC
-  )
-
-Kn_RC_long <- Kn_NRC_RC_final_wide %>%
-  transmute(
-    year,
-    asset      = "RC",
-    var        = "Kn",
-    value      = Kn_RC_2003,
-    price_base = "2003_CLP",
-    source     = source_RC
-  )
-
-Kn_NRC_RC_panel <- bind_rows(Kn_NRC_long, Kn_RC_long) %>%
+    source     = "Hofman_Kn_scaled_from_1980_to_2003"
+  ) %>%
   arrange(year, asset)
 
-## -------------------------
-## 8. Construct Kn_NR = Kn_ME + Kn_NRC (2003 CLP)
-## -------------------------
-Kn_ME <- Kn_backbone %>%
-  filter(asset == "ME") %>%
-  select(year, Kn_ME_2003 = value)
+############################################################
+## 5. Unir pre-1950 y 1950–1994 en panel final
+############################################################
 
-Kn_NRC <- Kn_NRC_RC_panel %>%
-  filter(asset == "NRC") %>%
-  select(year, Kn_NRC_2003 = value)
-
-Kn_NR_panel <- full_join(Kn_ME, Kn_NRC, by = "year") %>%
-  mutate(
-    value      = Kn_ME_2003 + Kn_NRC_2003,
-    asset      = "NR",
-    var        = "Kn",
-    price_base = "2003_CLP",
-    source     = "Derived_NR_ME_plus_NRC"
-  ) %>%
-  select(year, asset, var, value, price_base, source) %>%
-  arrange(year)
-
-## -------------------------
-## 9. Combine all Kn series into a single panel
-## -------------------------
 Kn_2003 <- bind_rows(
-  Kn_backbone,      # ME, C, T from Clio-Lab (anchored)
-  Kn_NRC_RC_panel,  # NRC, RC combined (Hofman inside window, Clio decomposed outside)
-  Kn_NR_panel       # NR derived from ME + NRC
+  Kn_pre_long,
+  Kn_post_long
 ) %>%
   arrange(year, asset)
 
-saveRDS(Kn_2003, file = file.path(dir_data_interim, "Kn_2003.rds"))
-
-## -------------------------
-## 10. Additivity check for Kn
-## -------------------------
-Kn_2003_additivity <- check_additivity(Kn_2003, "Kn")
-
-saveRDS(
-  Kn_2003_additivity,
-  file = file.path(dir_data_interim, "Kn_2003_additivity_residuals.rds")
-)
+saveRDS(Kn_2003, file.path(dir_int, "Kn_2003.rds"))
 
 ############################################################
-## End of 05_build_Kn_2003.R
+## 6. Chequeo de aditividad SFC
+############################################################
+
+Kn_add <- check_additivity(Kn_2003, "Kn")
+saveRDS(Kn_add, file.path(dir_int, "Kn_2003_additivity_residuals.rds"))
+
+message(">>> 05_build_Kn_2003.R COMPLETADO bajo esquema Hofman-dominante + Clio-paths.\n")
+############################################################
+## FIN
 ############################################################

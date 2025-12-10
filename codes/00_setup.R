@@ -1,155 +1,167 @@
 ############################################################
-## 00_setup.R
+## 00_setup.R  (TD–SFC Compliant Version)
 ## Project: Stock–flow consistent capital stock reconstruction (Chile)
+##
 ## Tasks:
 ##  - Load core packages
-##  - Define global asset set
-##  - Build 1950 anchor table from Hofman2000_anchors.xlsx
-##  - Define helper functions shared across scripts
-##  - Save anchor_1950 to data/interim/anchor_1950.rds
+##  - Define global directories and canonical asset sets
+##  - Load Hofman (2000) 1950 anchors from TWO SHEETS (Kg + Kn)
+##  - Clean, harmonize and merge anchors
+##  - Validate identities (warnings only)
+##  - Export data/interim/anchor_1950.rds
+##
+## NOTE:
+##  This script sets ONLY the structural foundations.
+##  Tafunell & Ducoing integration begins in scripts 02–06.
 ############################################################
 
 ## -------------------------
 ## 1. Load required packages
 ## -------------------------
-library(dplyr)
-library(tidyr)
-library(readr)
-library(readxl)
-library(ggplot2)
-library(purrr)
-library(stringr)
+suppressWarnings({
+  library(dplyr)
+  library(tidyr)
+  library(readr)
+  library(readxl)
+  library(ggplot2)
+  library(purrr)
+  library(stringr)
+})
 
 ## -------------------------
 ## 2. Define directories
 ## -------------------------
-dir_data_raw      <- file.path("data", "raw")
-dir_data_interim  <- file.path("data", "interim")
+dir_data_raw       <- file.path("data", "raw")
+dir_data_interim   <- file.path("data", "interim")
 dir_data_processed <- file.path("data", "processed")
 
-## Ensure directories exist (idempotent)
-dir.create(dir_data_raw,      recursive = TRUE, showWarnings = FALSE)
-dir.create(dir_data_interim,  recursive = TRUE, showWarnings = FALSE)
+dir.create(dir_data_raw, recursive = TRUE, showWarnings = FALSE)
+dir.create(dir_data_interim, recursive = TRUE, showWarnings = FALSE)
 dir.create(dir_data_processed, recursive = TRUE, showWarnings = FALSE)
 
 ## -------------------------
-## 3. Define asset set
+## 3. Canonical asset set
 ## -------------------------
-## ME  = Machinery & Equipment
-## NRC = Non-residential construction
-## RC  = Residential construction
-## C   = Construction total = NRC + RC
-## NR  = Non-residential capital = ME + NRC
-## T   = Total fixed capital = ME + NRC + RC = NR + RC
 assets <- c("ME", "NRC", "RC", "C", "NR", "T")
 
 ## -------------------------
-## 4. Build 1950 anchor table
+## 4. Load Hofman (2000) anchors
 ## -------------------------
-## Source: Hofman2000_anchors.xlsx stored in data/raw/
-## Assumptions about the Excel file:
-##  - It contains at least the following columns:
-##      asset, Kg_1980, Kg_2003, Kn_1980, Kn_2003
-##  - Optionally, it may contain a 'year' column; if so,
-##    we filter year == 1950 to obtain the anchor row(s).
-## Adjust column names here if your file uses different labels.
-
 anchor_file <- file.path(dir_data_raw, "Hofman2000_anchors.xlsx")
 
-anchor_raw <- read_excel(anchor_file)
+kg_raw <- read_excel(
+  anchor_file,
+  sheet = "Hofman_2000_1950_anchors_Kg",
+  col_names = TRUE
+)
 
-if ("year" %in% names(anchor_raw)) {
-  anchor_1950 <- anchor_raw %>%
-    filter(year == 1950) %>%
-    select(asset, Kg_1980, Kg_2003, Kn_1980, Kn_2003)
-} else {
-  ## If there is no year column, assume the file already contains
-  ## only the 1950 anchors (one row per asset).
-  anchor_1950 <- anchor_raw %>%
-    select(asset, Kg_1980, Kg_2003, Kn_1980, Kn_2003)
+kn_raw <- read_excel(
+  anchor_file,
+  sheet = "Hofman_2000_1950_anchors_Kn",
+  col_names = TRUE
+)
+
+## -------------------------
+## 5. Clean & harmonize
+## -------------------------
+kg_raw <- kg_raw %>%
+  rename(
+    year      = year,
+    prices    = prices,
+    pk_index  = `pk 100 = 2003`,
+    unit      = `Unit of Measure`,
+    Kg_ME     = Kg_ME_H2000,
+    Kg_C      = Kg_C_H2000,
+    Kg_NRC    = Kg_NRC_H2000,
+    Kg_RC     = Kg_RC_H2000,
+    Kg_T      = K_gr_tot_H2000,
+    Kg_NR     = K_gr_NR_H2000
+  ) %>%
+  mutate(across(-c(year, unit), as.numeric))
+
+kn_raw <- kn_raw %>%
+  rename(
+    year      = year,
+    prices    = prices,
+    pk_index  = `pk 100 = 2003`,
+    unit      = `Unit of Measure`,
+    Kn_ME     = Kn_ME_H2000,
+    Kn_C      = Kn_C_H2000,
+    Kn_NRC    = Kn_NRC_H2000,
+    Kn_RC     = K_net_RC_H2000,
+    Kn_T      = K_net_tot_H2000,
+    Kn_NR     = Kn_NR_H2000
+  ) %>%
+  mutate(across(-c(year, unit), as.numeric))
+
+## -------------------------
+## 6. Merge gross + net anchors
+## -------------------------
+anchor_1950 <- kg_raw %>%
+  left_join(
+    kn_raw %>% 
+      select(year, prices, pk_index, unit, starts_with("Kn_")),
+    by = c("year", "prices", "pk_index", "unit")
+  ) %>%
+  arrange(prices)
+
+## -------------------------
+## 7. Identity validation (warnings only)
+## -------------------------
+
+validate_identity <- function(df, g_var, nrc_var, rc_var, label) {
+  lhs <- df[[g_var]]
+  rhs <- df[[nrc_var]] + df[[rc_var]]
+  if (any(abs(lhs - rhs) > 1e-6, na.rm = TRUE)) {
+    warning(paste0(
+      "Identity check failed for ", label, 
+      ": ", g_var, " != ", nrc_var, " + ", rc_var,
+      ". Downstream SFC flows may be affected."
+    ))
+  }
 }
 
-## Ensure correct types and compute conversion factors:
-##   phi_g = Kg_2003 / Kg_1980  (gross stock price conversion 1980 -> 2003)
-##   phi_n = Kn_2003 / Kn_1980  (net stock price conversion 1980 -> 2003)
-anchor_1950 <- anchor_1950 %>%
-  mutate(
-    asset   = as.character(asset),
-    Kg_1980 = as.numeric(Kg_1980),
-    Kg_2003 = as.numeric(Kg_2003),
-    Kn_1980 = as.numeric(Kn_1980),
-    Kn_2003 = as.numeric(Kn_2003),
-    phi_g   = Kg_2003 / Kg_1980,
-    phi_n   = Kn_2003 / Kn_1980
-  )
+validate_identity(anchor_1950, "Kg_C", "Kg_NRC", "Kg_RC", "Gross C")
+validate_identity(anchor_1950, "Kn_C", "Kn_NRC", "Kn_RC", "Net C")
+validate_identity(anchor_1950, "Kg_NR", "Kg_ME", "Kg_NRC", "Gross NR")
+validate_identity(anchor_1950, "Kn_NR", "Kn_ME", "Kn_NRC", "Net NR")
 
 ## -------------------------
-## 5. Helper functions
+## 8. Save final harmonized anchor table
 ## -------------------------
+saveRDS(anchor_1950, file.path(dir_data_interim, "anchor_1950.rds"))
+message("anchor_1950.rds successfully saved to data/interim/")
 
-## check_additivity()
-## ------------------
-## Given a long-format panel with columns:
-##   year, asset, var, value
-## and a specific variable name var_name (e.g., "Ig", "Kg", "Kn"),
-## compute residuals for the additivity identities:
-##   NR = ME + NRC
-##   C  = NRC + RC
-##   T  = ME + NRC + RC
-## Returns a tibble with residuals per year.
-check_additivity <- function(df, var_name) {
-  df_wide <- df %>%
-    filter(var == var_name,
-           asset %in% c("ME", "NRC", "RC", "C", "NR", "T")) %>%
+############################################################
+## Modularity: check_additivity() (NOT EXECUTED HERE)
+############################################################
+check_additivity <- function(df, var_name = "Ig") {
+  
+  required_cols <- c("year", "asset", "value")
+  if (!all(required_cols %in% names(df))) {
+    stop("check_additivity(): df must include year, asset, value.")
+  }
+  
+  panel <- df %>%
     select(year, asset, value) %>%
-    distinct() %>%
-    pivot_wider(
-      names_from = asset,
-      values_from = value
+    pivot_wider(names_from = asset, values_from = value)
+  
+  panel <- panel %>%
+    mutate(
+      res_NR = NR - (ME + NRC),
+      res_C  = C  - (NRC + RC),
+      res_T  = T  - (ME + NRC + RC)
     )
   
-  ## Compute residuals; if some assets are missing in a given year,
-  ## the corresponding residuals will be NA.
-  df_res <- df_wide %>%
-    mutate(
-      res_NR = if_else(!is.na(NR) & !is.na(ME) & !is.na(NRC),
-                       NR - (ME + NRC), NA_real_),
-      res_C  = if_else(!is.na(C) & !is.na(NRC) & !is.na(RC),
-                       C  - (NRC + RC), NA_real_),
-      res_T  = if_else(!is.na(T) & !is.na(ME) & !is.na(NRC) & !is.na(RC),
-                       T  - (ME + NRC + RC), NA_real_)
-    ) %>%
-    select(year, res_NR, res_C, res_T)
+  tol <- 1e-6
+  max_res <- max(abs(panel$res_NR), abs(panel$res_C), abs(panel$res_T), na.rm = TRUE)
   
-  return(df_res)
-}
-
-## build_panel()
-## -------------
-## Standardize an input data frame to the long panel format used
-## throughout the project:
-##   year, asset, var, value, price_base, source
-## 'df' must contain at least 'year' and 'value' columns.
-## 'asset', 'var', 'source', and 'price_base' are scalars.
-build_panel <- function(df,
-                        asset,
-                        var,
-                        source,
-                        price_base) {
+  if (max_res > tol) {
+    warning(
+      "check_additivity(): non-trivial additivity residuals. ",
+      "Maximum = ", format(max_res, scientific = TRUE)
+    )
+  }
   
-  df %>%
-    transmute(
-      year       = as.integer(.data$year),
-      asset      = asset,
-      var        = var,
-      value      = as.numeric(.data$value),
-      price_base = price_base,
-      source     = source
-    ) %>%
-    arrange(year)
+  return(panel)
 }
-
-## -------------------------
-## 6. Save anchor_1950
-## -------------------------
-saveRDS(anchor_1950, file = file.path(dir_data_interim, "anchor_1950.rds"))
