@@ -11,6 +11,7 @@
 \usepackage{caption}          % improves table handling
 \usepackage{pdflscape}
 \usepackage{booktabs}
+\usepackage{}
 
 
 \title{Stock--Flow Consistency Validation Report}
@@ -21,15 +22,23 @@
 	
 	\section*{1. SFC Rate Summary Table}
 	
-	\input{tables/sfc_rate_summary.tex}
+	\input{tables/sfc_rates_dep_d.tex}
 	
-	\newpage
+	\input{tables/sfc_rates_dep_z.tex}
+	
+	\input{tables/sfc_rates_i.tex}
+
+	\input{tables/sfc_rates_fnkf.tex}
+
+	\input{tables/sfc_rates_knkg.tex}
+
+	\input{tables/sfc_rates_eps.tex}
+
 	\section*{2. Splice Diagnostics (1949 $\rightarrow$ 1950)}
 	
-	\input{tables/splice_summary_1950.tex}
+	\input{tables/splice_summary_1950.tex}	
 	
-	\bigskip
-	
+		
 	\section*{Worst Splice Jumps Across All Variables}
 	
 	\input{tables/splice_worst_jumps.tex}
@@ -37,7 +46,7 @@
 	\newpage
 	\section*{3. Time-Series Diagnostics for Rates}
 	
-	\subsection*{Depreciation Rate $\delta_t$}
+	
 	\begin{figure}[H]
 		\centering
 		\includegraphics[width=0.95\textwidth]{plots/delta_timeseries.pdf}
@@ -76,7 +85,8 @@
 		\includegraphics[width=0.95\textwidth]{plots/splice_jump_Kn.pdf}
 	\end{figure}
 	
-	\subsection*{Depreciation Rate $\delta_t$}
+	\subsection*{Depreciation Rate $d\\
+		_t$}
 	\begin{figure}[H]
 		\centering
 		\includegraphics[width=0.95\textwidth]{plots/splice_jump_delta.pdf}
@@ -88,7 +98,7 @@
 		\includegraphics[width=0.95\textwidth]{plots/splice_jump_z.pdf}
 	\end{figure}
 	
-	\subsection*{Investment--Capital Ratio $i_t$}
+	\subsection*{Investment-- pital Ratio $i_t$}
 	\begin{figure}[H]
 		\centering
 		\includegraphics[width=0.95\textwidth]{plots/splice_jump_i.pdf}

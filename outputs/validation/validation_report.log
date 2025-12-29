@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 23.10.12) (preloaded format=pdflatex 2023.11.29)  10 DEC 2025 18:22
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 23.10.12) (preloaded format=pdflatex 2023.11.29)  11 DEC 2025 21:38
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -210,20 +210,20 @@ File: l3backend-pdftex.def 2023-11-09 L3 backend support: PDF output (pdfTeX)
 (validation_report.aux)
 \openout1 = `validation_report.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 18.
-LaTeX Font Info:    ... okay on input line 18.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 18.
-LaTeX Font Info:    ... okay on input line 18.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 18.
-LaTeX Font Info:    ... okay on input line 18.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 18.
-LaTeX Font Info:    ... okay on input line 18.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 18.
-LaTeX Font Info:    ... okay on input line 18.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 18.
-LaTeX Font Info:    ... okay on input line 18.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 18.
-LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 19.
+LaTeX Font Info:    ... okay on input line 19.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 19.
+LaTeX Font Info:    ... okay on input line 19.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 19.
+LaTeX Font Info:    ... okay on input line 19.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 19.
+LaTeX Font Info:    ... okay on input line 19.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 19.
+LaTeX Font Info:    ... okay on input line 19.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 19.
+LaTeX Font Info:    ... okay on input line 19.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 19.
+LaTeX Font Info:    ... okay on input line 19.
 
 (C:\Program Files\MiKTeX\tex/context/base/mkii\supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
@@ -285,91 +285,105 @@ Package caption Info: End \AtBeginDocument code.
 
 LaTeX Warning: No \author given.
 
-(tables/sfc_rate_summary.tex [1
-
-{C:/Users/dpola/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}] [2
-
-]) (tables/splice_summary_1950.tex)
-(tables/splice_worst_jumps.tex
-
-LaTeX Warning: Float too large for page by 13.96964pt on input line 61.
-
+(tables/sfc_rates_dep_d.tex) (tables/sfc_rates_dep_z.tex)
+(tables/sfc_rates_i.tex) (tables/sfc_rates_fnkf.tex
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-) [3
+) (tables/sfc_rates_knkg.tex
 
-]
-<plots/delta_timeseries.pdf, id=19, 650.43pt x 346.29375pt>
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+) (tables/sfc_rates_eps.tex
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+) (tables/splice_summary_1950.tex [1
+
+{C:/Users/dpola/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}]) (tables/spl
+ice_worst_jumps.tex
+Overfull \hbox (38.96326pt too wide) in paragraph at lines 5--61
+ [][] 
+ []
+
+
+LaTeX Warning: Float too large for page by 13.96964pt on input line 61.
+
+[2]
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+) [3]
+<plots/delta_timeseries.pdf, id=15, 650.43pt x 346.29375pt>
 File: plots/delta_timeseries.pdf Graphic file (type pdf)
 <use plots/delta_timeseries.pdf>
-Package pdftex.def Info: plots/delta_timeseries.pdf  used on input line 43.
+Package pdftex.def Info: plots/delta_timeseries.pdf  used on input line 52.
 (pdftex.def)             Requested size: 446.26582pt x 237.6008pt.
-<plots/z_timeseries.pdf, id=20, 650.43pt x 346.29375pt>
+<plots/z_timeseries.pdf, id=16, 650.43pt x 346.29375pt>
 File: plots/z_timeseries.pdf Graphic file (type pdf)
 <use plots/z_timeseries.pdf>
-Package pdftex.def Info: plots/z_timeseries.pdf  used on input line 49.
+Package pdftex.def Info: plots/z_timeseries.pdf  used on input line 58.
 (pdftex.def)             Requested size: 446.26582pt x 237.6008pt.
-<plots/i_timeseries.pdf, id=21, 650.43pt x 346.29375pt>
+<plots/i_timeseries.pdf, id=17, 650.43pt x 346.29375pt>
 File: plots/i_timeseries.pdf Graphic file (type pdf)
 <use plots/i_timeseries.pdf>
-Package pdftex.def Info: plots/i_timeseries.pdf  used on input line 55.
+Package pdftex.def Info: plots/i_timeseries.pdf  used on input line 64.
 (pdftex.def)             Requested size: 446.26582pt x 237.6008pt.
  [4 <./plots/delta_timeseries.pdf> <./plots/z_timeseries.pdf>] [5 <./plots/i_ti
 meseries.pdf>]
-<plots/splice_jump_Ig.pdf, id=53, 542.025pt x 325.215pt>
+<plots/splice_jump_Ig.pdf, id=50, 542.025pt x 325.215pt>
 File: plots/splice_jump_Ig.pdf Graphic file (type pdf)
 <use plots/splice_jump_Ig.pdf>
-Package pdftex.def Info: plots/splice_jump_Ig.pdf  used on input line 64.
+Package pdftex.def Info: plots/splice_jump_Ig.pdf  used on input line 73.
 (pdftex.def)             Requested size: 446.26582pt x 267.76974pt.
-<plots/splice_jump_Kg.pdf, id=54, 542.025pt x 325.215pt>
+<plots/splice_jump_Kg.pdf, id=51, 542.025pt x 325.215pt>
 File: plots/splice_jump_Kg.pdf Graphic file (type pdf)
 <use plots/splice_jump_Kg.pdf>
-Package pdftex.def Info: plots/splice_jump_Kg.pdf  used on input line 70.
+Package pdftex.def Info: plots/splice_jump_Kg.pdf  used on input line 79.
 (pdftex.def)             Requested size: 446.26582pt x 267.76974pt.
-<plots/splice_jump_Kn.pdf, id=55, 542.025pt x 325.215pt>
+<plots/splice_jump_Kn.pdf, id=52, 542.025pt x 325.215pt>
 File: plots/splice_jump_Kn.pdf Graphic file (type pdf)
 <use plots/splice_jump_Kn.pdf>
-Package pdftex.def Info: plots/splice_jump_Kn.pdf  used on input line 76.
+Package pdftex.def Info: plots/splice_jump_Kn.pdf  used on input line 85.
 (pdftex.def)             Requested size: 446.26582pt x 267.76974pt.
  [6 <./plots/splice_jump_Ig.pdf> <./plots/splice_jump_Kg.pdf>]
-<plots/splice_jump_delta.pdf, id=73, 542.025pt x 325.215pt>
+<plots/splice_jump_delta.pdf, id=70, 542.025pt x 325.215pt>
 File: plots/splice_jump_delta.pdf Graphic file (type pdf)
 <use plots/splice_jump_delta.pdf>
-Package pdftex.def Info: plots/splice_jump_delta.pdf  used on input line 82.
+Package pdftex.def Info: plots/splice_jump_delta.pdf  used on input line 92.
 (pdftex.def)             Requested size: 446.26582pt x 267.76974pt.
-<plots/splice_jump_z.pdf, id=74, 542.025pt x 325.215pt>
+<plots/splice_jump_z.pdf, id=71, 542.025pt x 325.215pt>
 File: plots/splice_jump_z.pdf Graphic file (type pdf)
 <use plots/splice_jump_z.pdf>
-Package pdftex.def Info: plots/splice_jump_z.pdf  used on input line 88.
+Package pdftex.def Info: plots/splice_jump_z.pdf  used on input line 98.
 (pdftex.def)             Requested size: 446.26582pt x 267.76974pt.
  [7 <./plots/splice_jump_Kn.pdf> <./plots/splice_jump_delta.pdf>]
-<plots/splice_jump_i.pdf, id=93, 542.025pt x 325.215pt>
+<plots/splice_jump_i.pdf, id=90, 542.025pt x 325.215pt>
 File: plots/splice_jump_i.pdf Graphic file (type pdf)
 <use plots/splice_jump_i.pdf>
-Package pdftex.def Info: plots/splice_jump_i.pdf  used on input line 94.
+Package pdftex.def Info: plots/splice_jump_i.pdf  used on input line 104.
 (pdftex.def)             Requested size: 446.26582pt x 267.76974pt.
-<plots/splice_jump_FNKF.pdf, id=94, 542.025pt x 325.215pt>
+<plots/splice_jump_FNKF.pdf, id=91, 542.025pt x 325.215pt>
 File: plots/splice_jump_FNKF.pdf Graphic file (type pdf)
 <use plots/splice_jump_FNKF.pdf>
-Package pdftex.def Info: plots/splice_jump_FNKF.pdf  used on input line 100.
+Package pdftex.def Info: plots/splice_jump_FNKF.pdf  used on input line 110.
 (pdftex.def)             Requested size: 446.26582pt x 267.76974pt.
  [8 <./plots/splice_jump_z.pdf> <./plots/splice_jump_i.pdf>] [9 <./plots/splice
 _jump_FNKF.pdf>]
-<plots/additivity_Ig.pdf, id=122, 578.16pt x 325.215pt>
+<plots/additivity_Ig.pdf, id=119, 578.16pt x 325.215pt>
 File: plots/additivity_Ig.pdf Graphic file (type pdf)
 <use plots/additivity_Ig.pdf>
-Package pdftex.def Info: plots/additivity_Ig.pdf  used on input line 109.
+Package pdftex.def Info: plots/additivity_Ig.pdf  used on input line 119.
 (pdftex.def)             Requested size: 446.26582pt x 251.02173pt.
-<plots/additivity_Kg.pdf, id=123, 578.16pt x 325.215pt>
+<plots/additivity_Kg.pdf, id=120, 578.16pt x 325.215pt>
 File: plots/additivity_Kg.pdf Graphic file (type pdf)
 <use plots/additivity_Kg.pdf>
-Package pdftex.def Info: plots/additivity_Kg.pdf  used on input line 115.
+Package pdftex.def Info: plots/additivity_Kg.pdf  used on input line 125.
 (pdftex.def)             Requested size: 446.26582pt x 251.02173pt.
-<plots/additivity_Kn.pdf, id=124, 578.16pt x 325.215pt>
+<plots/additivity_Kn.pdf, id=121, 578.16pt x 325.215pt>
 File: plots/additivity_Kn.pdf Graphic file (type pdf)
 <use plots/additivity_Kn.pdf>
-Package pdftex.def Info: plots/additivity_Kn.pdf  used on input line 121.
+Package pdftex.def Info: plots/additivity_Kn.pdf  used on input line 131.
 (pdftex.def)             Requested size: 446.26582pt x 251.02173pt.
  [10 <./plots/additivity_Ig.pdf> <./plots/additivity_Kg.pdf>] [11 <./plots/addi
 tivity_Kn.pdf>] [12] (validation_report.aux)
@@ -379,24 +393,22 @@ L3 programming layer <2023-11-09>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 4303 strings out of 474587
- 73874 string characters out of 5755516
- 1953558 words of memory out of 5000000
- 26455 multiletter control sequences out of 15000+600000
- 565464 words of font info for 62 fonts, out of 8000000 for 9000
+ 4327 strings out of 474587
+ 74761 string characters out of 5755516
+ 1959558 words of memory out of 5000000
+ 26465 multiletter control sequences out of 15000+600000
+ 564896 words of font info for 60 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 66i,9n,67p,262b,339s stack positions out of 10000i,1000n,20000p,200000b,200000s
- <C:\Users\dpola\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\tcrm
-1095.pk><C:/Program Files/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/
-Program Files/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi12.pfb><C:/Program File
-s/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi6.pfb><C:/Program Files/MiKTeX/font
-s/type1/public/amsfonts/cm/cmmi8.pfb><C:/Program Files/MiKTeX/fonts/type1/publi
-c/amsfonts/cm/cmr10.pfb><C:/Program Files/MiKTeX/fonts/type1/public/amsfonts/cm
-/cmr17.pfb><C:/Program Files/MiKTeX/fonts/type1/public/amsfonts/cm/cmr8.pfb><C:
-/Program Files/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb>
-Output written on validation_report.pdf (12 pages, 186559 bytes).
+ 66i,9n,67p,262b,303s stack positions out of 10000i,1000n,20000p,200000b,200000s
+<C:/Program Files/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Progra
+m Files/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi12.pfb><C:/Program Files/MiKT
+eX/fonts/type1/public/amsfonts/cm/cmmi8.pfb><C:/Program Files/MiKTeX/fonts/type
+1/public/amsfonts/cm/cmr10.pfb><C:/Program Files/MiKTeX/fonts/type1/public/amsf
+onts/cm/cmr17.pfb><C:/Program Files/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy1
+0.pfb>
+Output written on validation_report.pdf (12 pages, 157929 bytes).
 PDF statistics:
- 190 PDF objects out of 1000 (max. 8388607)
+ 175 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
  66 words of extra memory for PDF output out of 10000 (max. 10000000)
 

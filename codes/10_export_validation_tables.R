@@ -133,19 +133,107 @@
   Kg_add <- readRDS(file.path(dir_int, "Kg_2003_additivity_residuals.rds"))
   Kn_add <- readRDS(file.path(dir_int, "Kn_2003_additivity_residuals.rds"))
   
+  
+  
+  ############################################################
+  ## Build THREE clean tables instead of one mega-table
+  ############################################################
+  
+  # 1. Depreciation & Depletion
+  ############################################################
+  ## Build THREE clean tables instead of one mega-table
+  ############################################################
+  
+  # 1. Depreciation 
+  table_dep_d <- sfc_rate_summary %>%
+    select(
+      asset, n_obs,
+      delta_min, delta_p10, delta_med, delta_mean, delta_p90, delta_max,
+    ) %>%
+    round_df(2)
+
+  # 2. Depletion
+  
+  table_dep_z <- sfc_rate_summary %>%
+    select(
+      asset, n_obs,
+      z_min, z_p10, z_med, z_mean, z_p90, z_max) %>%
+    round_df(2)
+  
+  
+  # 3. Investment ratio (i)
+  table_i <- sfc_rate_summary %>%
+    select(
+      asset, n_obs,
+      i_min, i_med, i_mean, i_max
+    ) %>%
+    round_df(2)
+  
+  # 4. FNKF 
+  table_fnkf <- sfc_rate_summary %>%
+    select(
+      asset, n_obs,
+      FNKF_min, FNKF_med, FNKF_mean, FNKF_max
+    ) %>%
+    round_df(2)
+  
+  # 5.Kn/Kg  
+  table_knkg <- sfc_rate_summary %>%
+    select(
+      asset, n_obs,
+      KnKg_min, KnKg_med, KnKg_mean, KnKg_max
+      ) %>%
+    round_df(2)
+  
+  # 6. SFC esp residuals  
+  table_eps <- sfc_rate_summary %>%
+    select(
+      asset, n_obs,    
+      epsKg_mean, epsKn_mean, epsJoint_mean
+    ) %>%
+    round_df(2)
+    
   ############################################################
   ## 2. Export LaTeX tables (rounded to 3 decimals)
   ############################################################
   
   ## 2.1 SFC Rate Summary
   table_as_is(
-    data        = round_df(sfc_rate_summary, 2),
-    file_path   = file.path(dir_tables, "sfc_rate_summary.tex"),
-    caption     = "Summary of implied SFC rates and ratios",
-    format      = "latex",
-    escape      = TRUE,
-    overwrite   = TRUE
+    table_dep_d,
+    file.path(dir_tables, "sfc_rates_dep_d.tex"),
+    caption = "Depreciation  Rates"
   )
+  
+  table_as_is(
+    table_dep_z,
+    file.path(dir_tables, "sfc_rates_dep_z.tex"),
+    caption = "Depletition Rates"
+  )
+  
+  table_as_is(
+    table_i,
+    file.path(dir_tables, "sfc_rates_i.tex"),
+    caption = "Investment–Capital Ratios"
+  )
+  
+  table_as_is(
+    table_fnkf,
+    file.path(dir_tables, "sfc_rates_fnkf.tex"),
+    caption = "Net Fixed Capital Formation"
+  )
+  
+  table_as_is(
+    table_knkg,
+    file.path(dir_tables, "sfc_rates_knkg.tex"),
+    caption = "Kn/Kg Ratios"
+  )
+
+  table_as_is(
+    table_eps,
+    file.path(dir_tables, "sfc_rates_eps.tex"),
+    caption = "SFC Residuals"
+  )
+  
   
   ## 2.2 Splice summary for 1949→1950
   splice_summary_1950 <- splice_summary %>%
@@ -154,7 +242,7 @@
   table_as_is(
     data        = round_df(splice_summary_1950, 2),
     file_path   = file.path(dir_tables, "splice_summary_1950.tex"),
-    caption     = "Splice diagnostics for 1949→1950",
+    caption     = "Splice diagnostics for 1949 to 1950",
     format      = "latex",
     overwrite   = TRUE
   )
@@ -174,13 +262,13 @@
   )
   
   ## 2.4 Additivity residual tables
-  table_as_is(round_df(Ig_add, 3), file.path(dir_tables,"additivity_Ig.tex"),
+  table_as_is(round_df(Ig_add, 2), file.path(dir_tables,"additivity_Ig.tex"),
               caption="Additivity residuals: Ig", format="latex")
   
-  table_as_is(round_df(Kg_add, 3), file.path(dir_tables,"additivity_Kg.tex"),
+  table_as_is(round_df(Kg_add, 2), file.path(dir_tables,"additivity_Kg.tex"),
               caption="Additivity residuals: Kg", format="latex")
   
-  table_as_is(round_df(Kn_add, 3), file.path(dir_tables,"additivity_Kn.tex"),
+  table_as_is(round_df(Kn_add, 2), file.path(dir_tables,"additivity_Kn.tex"),
               caption="Additivity residuals: Kn", format="latex")
   
   ############################################################
@@ -293,8 +381,7 @@
         plot.title = element_text(size = 13, face = "bold")
       )
     
-    ggsave(file.path(dir_plots, outfile), p, width = 8, height = 4.5)
-  }
+    ggsave(file.path(dir_plots, outfile), p, width = 8, height = 4.5) }
   
   plot_additivity_residuals(
     Ig_add,

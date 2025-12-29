@@ -144,7 +144,7 @@ saveRDS(raw_hofman_K, file.path(dir_data_interim, "raw_hofman_K.rds"))
 ## 4. Clio-Lab — GFKF (real, nominal, Pk)
 ############################################################
 
-file_clio_Ig <- file.path(dir_data_raw, "ClioLab_GFKF_Freal_nominal__Pk.xlsx")
+file_clio_Ig <- file.path(dir_data_raw, "ClioLab_GFKF_Freal_nominal_Pk.xlsx")
 
 raw_clio_Ig <- map_dfr(
   excel_sheets(file_clio_Ig),
